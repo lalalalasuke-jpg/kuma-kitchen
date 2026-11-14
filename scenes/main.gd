@@ -89,7 +89,7 @@ const CREDITS := """クレジット
 
 フォント: Noto Sans JP（SIL Open Font License 1.1）
 ゲームエンジン: Godot Engine（MIT License）
-© Juan Linietsky, Ariel Manzur and contributors
+(c) Juan Linietsky, Ariel Manzur and contributors
 godotengine.org/license"""
 
 signal popup_closed
@@ -574,7 +574,7 @@ func _build_ui() -> void:
 	var nav := HBoxContainer.new()
 	nav.add_theme_constant_override("separation", 16)
 	bbox.add_child(nav)
-	for spec in [["◀ まえ", -1], ["", 0], ["つぎ ▶", 1]]:
+	for spec in [["← まえ", -1], ["", 0], ["つぎ →", 1]]:
 		if spec[1] == 0:
 			page_label = Label.new()
 			page_label.custom_minimum_size = Vector2(200, 0)
