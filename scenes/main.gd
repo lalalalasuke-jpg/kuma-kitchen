@@ -7,13 +7,21 @@ extends Node2D
 const BEST_PATH := "user://best.cfg"
 const SFX_SETS := ["code", "off"]
 const SFX_NAMES := {"code": "音: あり", "off": "音: なし"}
-const ORDER := ["turnip", "tomato", "strawberry", "milk"]
-const NAMES := {"turnip": "カブ", "tomato": "トマト", "strawberry": "イチゴ", "milk": "ミルク"}
-const START_STOCK := 3  # はじめの材料の数（それぞれ）
+const BASE := ["turnip", "tomato", "strawberry", "milk"]  # はじめから使える材料
+const NAMES := {"turnip": "カブ", "tomato": "トマト", "strawberry": "イチゴ", "milk": "ミルク",
+	"egg": "たまご", "flour": "小麦粉", "butter": "バター"}
+const START_STOCK := 3  # はじめの材料の数（それぞれ）。新しく入荷した材料も同じ数から
 const DAILY := 2  # 次の日に増える数（それぞれ）
 const STOCK_MAX := 6
 const COOK_TIME := 1.4
-# 料理。pair は使う材料2つ（順番は関係なし）。どれにも当てはまらない組み合わせは「ふしぎな料理」
+# 開放のしくみ（遊んでみて調整する数字はここ）
+const EGG_RECIPES := 4  # この数のレシピを見つけたら、次の朝たまごが入荷（にわとりさんから）
+const EGG_DAY := 3  # 見つけられなくても、この日になったら入荷（救済）
+const ADV_RECIPES := 8  # この数で「上級編」: 次の朝、新しい鍋（3個入る）と小麦粉・バター
+const ADV_DAY := 5
+const HINT_FAILS := 2  # ふしぎな料理をこの回数作ったら、次の朝に妖精さんのヒント
+const HINTS_PER := 2  # 1回で書いてくれるヒントの数
+# 料理。pair は使う材料（2つか3つ、順番は関係なし）。どれにも当てはまらない組み合わせは「ふしぎな料理」
 const RECIPES := [
 	{"id": "potage", "name": "カブのポタージュ", "pair": ["turnip", "milk"], "kind": "bowl", "color": Color(0.98, 0.95, 0.84),
 		"hint": "白い野菜と白い飲みもの", "say": "まろやかで、紳士的なお味でございます"},
@@ -31,21 +39,48 @@ const RECIPES := [
 		"hint": "あまい実と白い飲みもの", "say": "なんと、かわいらしい……"},
 	{"id": "hotmilk", "name": "ホットミルク", "pair": ["milk", "milk"], "kind": "cup", "color": Color(0.99, 0.98, 0.94),
 		"hint": "白い飲みものをたっぷり", "say": "夜ふかしのお供に"},
+	{"id": "yudetamago", "name": "ゆでたまご", "pair": ["egg", "egg"], "kind": "eggs", "color": Color(1, 0.97, 0.9),
+		"hint": "たまごをたっぷり", "say": "にわとりさんに感謝を"},
+	{"id": "tomatama", "name": "トマトたまごスープ", "pair": ["tomato", "egg"], "kind": "bowl", "color": Color(0.98, 0.6, 0.3),
+		"hint": "赤い野菜とたまご", "say": "ふわふわのたまごが、たまりませんな"},
+	{"id": "pudding", "name": "プリン", "pair": ["egg", "milk"], "kind": "pudding", "color": Color(1, 0.88, 0.5),
+		"hint": "たまごと白い飲みもの", "say": "ぷるぷる……紳士も笑顔になります"},
+	{"id": "tamagotoji", "name": "カブのたまごとじ", "pair": ["turnip", "egg"], "kind": "plate", "color": Color(1, 0.86, 0.45),
+		"hint": "白い野菜とたまご", "say": "やさしい黄色ですな"},
+	{"id": "pasta", "name": "パスタ", "pair": ["flour", "egg"], "kind": "plate", "color": Color(0.98, 0.85, 0.5),
+		"hint": "粉とたまご", "say": "生地から作るとは、本格的ですな"},
+	{"id": "butterni", "name": "カブのバター煮", "pair": ["turnip", "butter"], "kind": "plate", "color": Color(0.98, 0.92, 0.6),
+		"hint": "白い野菜とバター", "say": "バターの香りが、紳士的でございます"},
+	{"id": "pancake", "name": "パンケーキ", "pair": ["flour", "egg", "milk"], "kind": "pancake", "color": Color(0.9, 0.68, 0.38),
+		"hint": "粉とたまごと白い飲みもの", "say": "ふわっふわ……！"},
+	{"id": "whitesauce", "name": "ホワイトソース", "pair": ["flour", "butter", "milk"], "kind": "jar", "color": Color(0.99, 0.97, 0.9),
+		"hint": "粉とバターと白い飲みもの", "say": "料理の腕が、また一段上がりましたな"},
+	{"id": "cookie", "name": "イチゴクッキー", "pair": ["flour", "butter", "strawberry"], "kind": "cookies", "color": Color(0.9, 0.7, 0.42),
+		"hint": "粉とバターとあまい実", "say": "おやつの時間にいたしましょう"},
+	{"id": "stew", "name": "クリームシチュー", "pair": ["turnip", "milk", "butter"], "kind": "bowl", "color": Color(1, 0.96, 0.88),
+		"hint": "白い野菜と白い飲みものとバター", "say": "寒い日には、これに限りますな"},
+	{"id": "minestrone", "name": "ミネストローネ", "pair": ["turnip", "tomato", "butter"], "kind": "bowl", "color": Color(0.9, 0.36, 0.22),
+		"hint": "畑の野菜ふたつとバター", "say": "具だくさんで、ごちそうですな"},
+	{"id": "ichigopudding", "name": "イチゴプリン", "pair": ["egg", "milk", "strawberry"], "kind": "pudding", "color": Color(1, 0.72, 0.78),
+		"hint": "たまごと白い飲みものとあまい実", "say": "これは……かわいらしさの極み"},
+	{"id": "gratin", "name": "カブのグラタン", "pair": ["turnip", "milk", "flour"], "kind": "bowl", "color": Color(0.98, 0.82, 0.5),
+		"hint": "白い野菜と白い飲みものと粉", "say": "こんがり、香ばしい……"},
 	{"id": "mystery", "name": "ふしぎな料理", "pair": [], "kind": "mystery", "color": Color(0.58, 0.46, 0.7),
 		"hint": "合わない組み合わせ…？", "say": "……これは、なんでございましょう"},
 ]
 const HOWTO := """あそびかた
 
-棚の材料をタップすると、鍋に入るよ（2つまで）
+くま紳士ららすけは、お料理上手をめざして
+今日もお料理修行。
+目標は、レシピ帳をいっぱいにすること！
+
+棚の材料をタップすると、鍋に入るよ
 鍋をタップすると、1つ棚にもどすよ
 2つ入ったら「煮る」で料理ができる！
 
-できた料理はレシピ帳に登録されるよ
-レシピ帳をぜんぶうめたらクリア
-
-材料は使うと減るよ
-「次の日」にすると少し増えるよ
-何日でうめられるかな？"""
+材料は使うと減るよ。「次の日」で少し増えるよ
+料理が上手になると、新しい材料や
+大きな鍋が手に入るかも……？"""
 const CREDITS := """クレジット
 
 企画・ゲームデザイン: ららすけ（lalasuke）
@@ -57,6 +92,8 @@ const CREDITS := """クレジット
 © Juan Linietsky, Ariel Manzur and contributors
 godotengine.org/license"""
 
+signal popup_closed
+
 static var skip_title := false  # 「もう一回」でシーンを読み直した時はタイトルを出さない
 
 var best_path := BEST_PATH  # テストでは別のファイルに差し替える
@@ -65,6 +102,13 @@ var stock := {}
 var pot: Array = []
 var found := {}
 var cooked := 0  # 作った回数
+var unlocked: Array = BASE.duplicate()  # 使える材料
+var capacity := 2  # 鍋に入れられる数
+var egg_ready := false  # たまごの入荷（次の朝）
+var adv_ready := false  # 上級編（次の朝、新しい鍋と小麦粉・バター）
+var fails := 0  # 前のヒントからあとに、ふしぎな料理を作った回数
+var hinted := {}
+var completed := false
 var sfx_set := "code"
 var _sfx_cache := {}
 var _sfx_players: Array = []
@@ -85,12 +129,13 @@ var popup_label: Label
 var popup_buttons: VBoxContainer
 var book_panel: PanelContainer
 var book: Control
+var page_label: Label
 
 
 func _ready() -> void:
-	for id in ORDER:
+	for id in unlocked:
 		stock[id] = START_STOCK
-	kitchen.order = ORDER
+	kitchen.order = unlocked
 	_build_ui()
 	var cfg := ConfigFile.new()
 	if cfg.load(best_path) == OK:
@@ -107,7 +152,7 @@ func _ready() -> void:
 
 func _show_title() -> void:
 	var best := _load_best()
-	var text := "くま紳士のキッチン\n\n材料をくみあわせて\nレシピ帳をうめよう"
+	var text := "くま紳士のキッチン\n\nお料理上手をめざして、今日もお料理修行。\n目標は、レシピ帳をいっぱいにすること！"
 	if best > 0:
 		text += "\n\nベスト: %d日でコンプリート" % best
 	_show_popup(text, [["はじめる", _start], ["あそびかた", _show_howto], ["クレジット", _show_credits]])
@@ -175,7 +220,7 @@ func _on_tap(pos: Vector2) -> void:
 
 
 func add_to_pot(id: String) -> void:
-	if pot.size() >= 2:
+	if pot.size() >= capacity:
 		sfx("error")
 		say("鍋はいっぱい。鍋をタップすると材料をもどせるよ")
 		return
@@ -186,8 +231,13 @@ func add_to_pot(id: String) -> void:
 	stock[id] -= 1
 	pot.append(id)
 	sfx("sow")
-	if pot.size() == 2:
-		say("%sと%s。「煮る」で料理しよう！" % [NAMES[pot[0]], NAMES[pot[1]]])
+	var names := []
+	for x in pot:
+		names.append(NAMES[x])
+	if pot.size() == capacity:
+		say("%s。「煮る」で料理しよう！" % "と".join(names))
+	elif pot.size() >= 2:
+		say("%s。「煮る」で料理できるよ。もう1つ入れてもいいよ" % "と".join(names))
 	else:
 		say("%sを鍋に入れたよ。あと1つえらんでね" % NAMES[id])
 	_refresh()
@@ -203,12 +253,31 @@ func take_back() -> void:
 	_refresh()
 
 
-func recipe_for(a: String, b: String) -> Dictionary:
+func recipe_for(items: Array) -> Dictionary:
+	var a := items.duplicate()
+	a.sort()
 	for r in RECIPES:
-		var p: Array = r.pair
-		if p.size() == 2 and ((p[0] == a and p[1] == b) or (p[0] == b and p[1] == a)):
+		var p: Array = r.pair.duplicate()
+		p.sort()
+		if not p.is_empty() and p == a:
 			return r
 	return RECIPES[RECIPES.size() - 1]  # ふしぎな料理
+
+
+# いま作れる可能性のある料理（材料が開放されていて、鍋に入る数）。レシピ帳にはこれだけ出す
+func visible_recipes() -> Array:
+	var out := []
+	for r in RECIPES:
+		if r.pair.is_empty():
+			continue
+		var ok: bool = r.pair.size() <= capacity
+		for x in r.pair:
+			if not unlocked.has(x):
+				ok = false
+		if ok:
+			out.append(r)
+	out.append(RECIPES[RECIPES.size() - 1])
+	return out
 
 
 func cook() -> void:
@@ -221,7 +290,7 @@ func cook() -> void:
 	say("ぐつぐつ……")
 	_refresh()
 	await get_tree().create_timer(COOK_TIME).timeout
-	var r := recipe_for(pot[0], pot[1])
+	var r := recipe_for(pot)
 	pot.clear()
 	kitchen.cooking = false
 	kitchen.happy = true
@@ -230,16 +299,21 @@ func cook() -> void:
 	var is_new := not found.has(r.id)
 	found[r.id] = true
 	_refresh()
-	if found.size() == RECIPES.size():
-		sfx("clear")
-		_complete()
-		return
+	if r.id == "mystery":
+		fails += 1
 	sfx("good" if r.id != "mystery" else "error")
 	var text: String = "%sができた！" % r.name
 	if is_new:
 		text += "\n\nNEW! レシピ帳に登録したよ（%d / %d）" % [found.size(), RECIPES.size()]
 	text += "\n\nくま「%s」" % r.say
-	_show_popup(text, [["つづける", _close_popup]], 28)
+	if found.size() >= EGG_RECIPES and not unlocked.has("egg"):
+		egg_ready = true
+	if found.size() >= ADV_RECIPES and capacity < 3 and not adv_ready:
+		adv_ready = true
+		text += "\n\n★ 上級編！\nくま「そろそろ本格的に、お料理修行をいたしましょう」\n明日、新しい鍋を買いにいこう"
+	if found.size() == RECIPES.size():
+		completed = true
+	_show_popup(text, [["つづける", _complete if completed else _close_popup]], 26)
 
 
 func _close_popup() -> void:
@@ -255,7 +329,7 @@ func _close_popup() -> void:
 # 材料が足りなくて、もう何も作れない
 func _stuck() -> bool:
 	var total := pot.size()
-	for id in ORDER:
+	for id in unlocked:
 		total += stock[id]
 	return total < 2
 
@@ -269,17 +343,67 @@ func next_day() -> void:
 	pot.clear()
 	await _fade_to(0.8)
 	day += 1
-	for id in ORDER:
+	for id in unlocked:
 		stock[id] = mini(stock[id] + DAILY, STOCK_MAX)
 	kitchen.last_dish = {}
+	# 朝のできごと（入荷・上級編・妖精さん）を順番に見せる
+	var events := []
+	if not unlocked.has("egg") and (egg_ready or day >= EGG_DAY):
+		_unlock(["egg"])
+		events.append("にわとりさんが、たまごを産んでくれた！\n\nたまごが使えるようになったよ")
+	if capacity < 3 and (adv_ready or day >= ADV_DAY):
+		_unlock(["egg", "flour", "butter"])
+		capacity = 3
+		events.append("本格的にお料理するために、新しい鍋を買ってきた！\nついでに、お料理用の小麦粉とバターも\n\n鍋に3つまで入れられるようになったよ")
+	var fairy := fails >= HINT_FAILS and not _hint_candidates().is_empty()
 	_refresh()
 	sfx("morning")
 	say("%d日目の朝。材料が届いたよ" % day)
 	await _fade_to(0.0)
+	for e in events:
+		sfx("good")
+		_show_popup(e, [["わーい", _next_event]], 28)
+		await popup_closed
+	if fairy:
+		fails = 0
+		var picks := _hint_candidates()
+		picks.shuffle()
+		for r in picks.slice(0, HINTS_PER):
+			hinted[r.id] = true
+		_show_popup("夜のうちに、レシピ帳が枕元に置いてあった……\n\n中身を見てみよう", [["レシピ帳を見る", _next_event]], 28)
+		await popup_closed
+		busy = false
+		_show_book()
+		return
 	busy = false
 
 
+func _next_event() -> void:
+	popup.visible = false
+	popup_closed.emit()
+
+
+func _unlock(ids: Array) -> void:
+	for id in ids:
+		if not unlocked.has(id):
+			unlocked.append(id)
+			stock[id] = START_STOCK
+	kitchen.order = unlocked
+
+
+# 妖精さんがヒントを書ける料理（まだ作っていなくて、ヒントもまだのもの）
+func _hint_candidates() -> Array:
+	var out := []
+	for r in visible_recipes():
+		if r.id != "mystery" and not found.has(r.id) and not hinted.has(r.id):
+			out.append(r)
+	return out
+
+
 func _complete() -> void:
+	sfx("clear")
+	kitchen.happy = true
+	say("レシピ帳がいっぱいになった！")
 	var best := _load_best()
 	var text := "レシピ帳がぜんぶうまった！\n\n%d日目でコンプリート\n（料理した回数 %d回）" % [day, cooked]
 	if best == 0 or day < best:
@@ -288,7 +412,13 @@ func _complete() -> void:
 	else:
 		text += "\n\nベスト: %d日" % best
 	text += "\n\nくま「紳士の食卓が、完成いたしました」"
-	_show_popup(text, [["もう一回", _restart], ["タイトルへ", _to_title]], 28)
+	_show_popup(text, [["レシピ帳を見る", _show_book_from_clear], ["もう一回", _restart], ["タイトルへ", _to_title]], 28)
+
+
+func _show_book_from_clear() -> void:
+	popup.visible = false
+	busy = false
+	_show_book()
 
 
 func _restart() -> void:
@@ -319,8 +449,11 @@ func _show_book() -> void:
 	if busy:
 		return
 	sfx("click")
+	book.recipes = visible_recipes()
 	book.found = found
-	book.queue_redraw()
+	book.hinted = hinted
+	book.page = 0
+	_update_page()
 	book_panel.visible = true
 	busy = true
 
@@ -329,6 +462,19 @@ func _hide_book() -> void:
 	sfx("click")
 	book_panel.visible = false
 	busy = false
+	if completed:
+		_complete()
+
+
+func _turn_page(d: int) -> void:
+	sfx("click")
+	book.page = clampi(book.page + d, 0, book.pages() - 1)
+	_update_page()
+
+
+func _update_page() -> void:
+	page_label.text = "%d / %d" % [book.page + 1, book.pages()]
+	book.queue_redraw()
 
 
 # ---------------------------------------------------------------- 画面
@@ -341,6 +487,7 @@ func _refresh() -> void:
 	day_label.text = "%d日目" % day
 	book_button.text = "レシピ帳 %d / %d" % [found.size(), RECIPES.size()]
 	cook_button.disabled = pot.size() < 2 or kitchen.cooking
+	kitchen.capacity = capacity
 	kitchen.stock = stock
 	kitchen.pot = pot
 	kitchen.queue_redraw()
@@ -422,9 +569,25 @@ func _build_ui() -> void:
 	bbox.add_child(title)
 	book = Control.new()
 	book.set_script(load("res://scenes/book.gd"))
-	book.custom_minimum_size = Vector2(624, 660)
-	book.recipes = RECIPES
+	book.custom_minimum_size = Vector2(624, 630)
 	bbox.add_child(book)
+	var nav := HBoxContainer.new()
+	nav.add_theme_constant_override("separation", 16)
+	bbox.add_child(nav)
+	for spec in [["◀ まえ", -1], ["", 0], ["つぎ ▶", 1]]:
+		if spec[1] == 0:
+			page_label = Label.new()
+			page_label.custom_minimum_size = Vector2(200, 0)
+			page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			page_label.add_theme_font_size_override("font_size", 24)
+			nav.add_child(page_label)
+			continue
+		var b := Button.new()
+		b.text = spec[0]
+		b.custom_minimum_size = Vector2(196, 52)
+		b.add_theme_font_size_override("font_size", 22)
+		b.pressed.connect(_turn_page.bind(spec[1]))
+		nav.add_child(b)
 	var close := Button.new()
 	close.text = "とじる"
 	close.custom_minimum_size = Vector2(0, 60)

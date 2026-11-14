@@ -58,6 +58,32 @@ static func ingredient(ci: CanvasItem, id: String, p: Vector2, s := 1.0) -> void
 			_box(ci, Rect2(p + Vector2(-9, -30) * s, Vector2(18, 16) * s), Color(0.98, 0.98, 1), int(4 * s))
 			_box(ci, Rect2(p + Vector2(-11, -36) * s, Vector2(22, 8) * s), Color(0.3, 0.55, 0.9), int(3 * s))
 			ci.draw_rect(Rect2(p + Vector2(-13, 2) * s, Vector2(26, 12) * s), Color(0.3, 0.55, 0.9))
+		"egg":  # たまご: たまご型（下がふっくら）
+			var pts := PackedVector2Array()
+			for k in 28:
+				var a := TAU * k / 28.0
+				var r := 20.0 * (1.0 + 0.15 * sin(a))
+				pts.append(p + Vector2(cos(a) * r * 0.85, sin(a) * r * 1.15) * s)
+			ci.draw_colored_polygon(pts, Color(1, 0.97, 0.9))
+			pts.append(pts[0])
+			ci.draw_polyline(pts, LINE, 3)
+			ci.draw_circle(p + Vector2(-6, -8) * s, 4 * s, Color(1, 1, 1))
+		"flour":  # 小麦粉: ふくろ
+			var bag := PackedVector2Array([p + Vector2(-22, -26) * s, p + Vector2(22, -26) * s, p + Vector2(26, 28) * s, p + Vector2(-26, 28) * s])
+			ci.draw_colored_polygon(bag, Color(0.96, 0.92, 0.82))
+			bag.append(bag[0])
+			ci.draw_polyline(bag, LINE, 3)
+			ci.draw_line(p + Vector2(-22, -18) * s, p + Vector2(22, -18) * s, LINE, 2)
+			for k in 3:  # 麦の穂
+				ci.draw_circle(p + Vector2(0, -2 + k * 9) * s, 3.5 * s, Color(0.85, 0.65, 0.3))
+			ci.draw_line(p + Vector2(0, -6) * s, p + Vector2(0, 24) * s, Color(0.6, 0.45, 0.2), 2)
+		"butter":  # バター: お皿の上のかたまり
+			ci.draw_set_transform(p + Vector2(0, 18) * s, 0, Vector2(1, 0.35))
+			ci.draw_circle(Vector2.ZERO, 30 * s + 3, LINE)
+			ci.draw_circle(Vector2.ZERO, 30 * s, Color(0.9, 0.95, 1))
+			ci.draw_set_transform(Vector2.ZERO)
+			_box(ci, Rect2(p + Vector2(-20, -12) * s, Vector2(40, 26) * s), Color(1, 0.9, 0.5), int(5 * s))
+			ci.draw_rect(Rect2(p + Vector2(-20, -12) * s, Vector2(40, 7) * s), Color(1, 0.95, 0.7))
 
 
 # ---------------------------------------------------------------- 料理
@@ -109,6 +135,35 @@ static func dish(ci: CanvasItem, kind: String, color: Color, p: Vector2, s := 1.
 			ci.draw_set_transform(Vector2.ZERO)
 			for k in 2:
 				ci.draw_arc(p + Vector2(-10 + k * 16, -40) * s, 6 * s, PI * 0.5, PI * 1.5, 8, Color(1, 1, 1, 0.8), 3)
+		"pancake":  # パンケーキ: 3段重ねにバター
+			ci.draw_set_transform(p + Vector2(0, 22) * s, 0, Vector2(1, 0.35))
+			ci.draw_circle(Vector2.ZERO, 50 * s + 3, LINE)
+			ci.draw_circle(Vector2.ZERO, 50 * s, Color(1, 1, 1))
+			ci.draw_set_transform(Vector2.ZERO)
+			for k in 3:
+				_box(ci, Rect2(p + Vector2(-34, 2 - k * 13) * s, Vector2(68, 15) * s), color, int(7 * s), 2)
+			_box(ci, Rect2(p + Vector2(-9, -42) * s, Vector2(18, 10) * s), Color(1, 0.9, 0.5), int(3 * s), 2)
+		"cookies":  # クッキー: お皿に3枚
+			ci.draw_set_transform(p + Vector2(0, 14) * s, 0, Vector2(1, 0.35))
+			ci.draw_circle(Vector2.ZERO, 50 * s + 3, LINE)
+			ci.draw_circle(Vector2.ZERO, 50 * s, Color(1, 1, 1))
+			ci.draw_set_transform(Vector2.ZERO)
+			for q in [Vector2(-20, 2), Vector2(18, 4), Vector2(0, -10)]:
+				_outlined_circle(ci, p + q * s, 15 * s, color, 2)
+				ci.draw_circle(p + q * s, 5 * s, Color(0.9, 0.2, 0.3))
+		"eggs":  # ゆでたまご: エッグスタンドに
+			_box(ci, Rect2(p + Vector2(-16, 6) * s, Vector2(32, 22) * s), Color(0.55, 0.75, 0.95), int(6 * s))
+			ingredient(ci, "egg", p + Vector2(0, -10) * s, s)
+		"pudding":  # プリン: 台形にカラメル
+			ci.draw_set_transform(p + Vector2(0, 24) * s, 0, Vector2(1, 0.35))
+			ci.draw_circle(Vector2.ZERO, 46 * s + 3, LINE)
+			ci.draw_circle(Vector2.ZERO, 46 * s, Color(1, 1, 1))
+			ci.draw_set_transform(Vector2.ZERO)
+			var pd := PackedVector2Array([p + Vector2(-20, -24) * s, p + Vector2(20, -24) * s, p + Vector2(30, 22) * s, p + Vector2(-30, 22) * s])
+			ci.draw_colored_polygon(pd, color)
+			ci.draw_colored_polygon(PackedVector2Array([p + Vector2(-20, -24) * s, p + Vector2(20, -24) * s, p + Vector2(22, -14) * s, p + Vector2(-22, -14) * s]), Color(0.6, 0.35, 0.15))
+			pd.append(pd[0])
+			ci.draw_polyline(pd, LINE, 3)
 		"mystery":  # ふしぎな料理: むらさきのもくもく
 			ci.draw_set_transform(p + Vector2(0, 14) * s, 0, Vector2(1, 0.32))
 			ci.draw_circle(Vector2.ZERO, 50 * s + 3, LINE)
