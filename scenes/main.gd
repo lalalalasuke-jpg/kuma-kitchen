@@ -152,7 +152,7 @@ func _ready() -> void:
 
 func _show_title() -> void:
 	var best := _load_best()
-	var text := "くま紳士のキッチン\n\nお料理上手をめざして、今日もお料理修行。\n目標は、レシピ帳をいっぱいにすること！"
+	var text := "くま紳士のキッチン\n\nお料理上手をめざして\n今日もお料理修行\n\n目標は\nレシピ帳をいっぱいにすること！"
 	if best > 0:
 		text += "\n\nベスト: %d日でコンプリート" % best
 	_show_popup(text, [["はじめる", _start], ["あそびかた", _show_howto], ["クレジット", _show_credits]])
