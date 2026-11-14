@@ -374,6 +374,7 @@ func next_day() -> void:
 		if got_egg:
 			news.append("たまごが使えるようになったよ")
 		if capacity == 3 and lines.any(func(l: String) -> bool: return l.contains("新しい鍋")):
+			news.append("小麦粉とバターが使えるようになったよ")
 			news.append("鍋に3つまで入れられるようになったよ")
 		if fairy:
 			news.append("レシピ帳の中身を見てみよう")
