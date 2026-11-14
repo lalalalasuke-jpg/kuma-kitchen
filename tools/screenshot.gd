@@ -57,6 +57,12 @@ func _run() -> void:
 			for pr in [["turnip", "milk"], ["tomato", "tomato"], ["strawberry", "milk"], ["turnip", "tomato"]]:
 				await make(pr)
 			await next_day(true)
+		"all3":  # 1日目にたまご・上級編・妖精さんの条件を全部満たして、次の朝のお知らせ（1枚にまとまる）
+			for pr in [["turnip", "milk"], ["tomato", "tomato"], ["strawberry", "milk"], ["turnip", "tomato"],
+					["tomato", "milk"], ["strawberry", "strawberry"], ["milk", "milk"], ["turnip", "turnip"],
+					["turnip", "strawberry"], ["tomato", "strawberry"]]:
+				await make(pr)
+			await next_day(true)
 		"fairy":
 			await make(["turnip", "strawberry"])
 			await make(["tomato", "strawberry"])

@@ -346,35 +346,50 @@ func next_day() -> void:
 	for id in unlocked:
 		stock[id] = mini(stock[id] + DAILY, STOCK_MAX)
 	kitchen.last_dish = {}
-	# 朝のできごと（入荷・上級編・妖精さん）を順番に見せる
-	var events := []
+	# 朝のできごと（入荷・上級編・妖精さん）。同じ朝に重なったら、1枚のお知らせにまとめる
+	var lines := []
+	var got_egg := false
 	if not unlocked.has("egg") and (egg_ready or day >= EGG_DAY):
 		_unlock(["egg"])
-		events.append("にわとりさんが、たまごを産んでくれた！\n\nたまごが使えるようになったよ")
+		got_egg = true
+		lines.append("にわとりさんが、たまごを産んでくれた！")
 	if capacity < 3 and (adv_ready or day >= ADV_DAY):
-		_unlock(["egg", "flour", "butter"])
+		if not unlocked.has("egg"):  # 日にちの救済で、たまごより先に上級編が来た時
+			_unlock(["egg"])
+			got_egg = true
+			lines.append("にわとりさんが、たまごを産んでくれた！")
+		_unlock(["flour", "butter"])
 		capacity = 3
-		events.append("本格的にお料理するために、新しい鍋を買ってきた！\nついでに、お料理用の小麦粉とバターも\n\n鍋に3つまで入れられるようになったよ")
+		lines.append(("それに、" if got_egg else "") + "本格的にお料理するために\n新しい鍋を買ってきた！\nついでに、お料理用の小麦粉とバターも")
 	var fairy := fails >= HINT_FAILS and not _hint_candidates().is_empty()
-	_refresh()
-	sfx("morning")
-	say("%d日目の朝。材料が届いたよ" % day)
-	await _fade_to(0.0)
-	for e in events:
-		sfx("good")
-		_show_popup(e, [["わーい", _next_event]], 28)
-		await popup_closed
 	if fairy:
 		fails = 0
 		var picks := _hint_candidates()
 		picks.shuffle()
 		for r in picks.slice(0, HINTS_PER):
 			hinted[r.id] = true
-		_show_popup("夜のうちに、レシピ帳が枕元に置いてあった……\n\n中身を見てみよう", [["レシピ帳を見る", _next_event]], 28)
+		lines.append(("それから、" if not lines.is_empty() else "") + "夜のうちに\nレシピ帳が枕元に置いてあった……")
+	if not lines.is_empty():  # 最後に、なにが使えるようになったかをまとめる
+		var news := []
+		if got_egg:
+			news.append("たまごが使えるようになったよ")
+		if capacity == 3 and lines.any(func(l: String) -> bool: return l.contains("新しい鍋")):
+			news.append("鍋に3つまで入れられるようになったよ")
+		if fairy:
+			news.append("レシピ帳の中身を見てみよう")
+		lines.append("\n".join(news))
+	_refresh()
+	sfx("morning")
+	say("%d日目の朝。材料が届いたよ" % day)
+	await _fade_to(0.0)
+	if not lines.is_empty():
+		sfx("good")
+		_show_popup("\n\n".join(lines), [["レシピ帳を見る" if fairy else "わーい", _next_event]], 26)
 		await popup_closed
-		busy = false
-		_show_book()
-		return
+		if fairy:
+			busy = false
+			_show_book()
+			return
 	busy = false
 
 
