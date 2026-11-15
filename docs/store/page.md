@@ -38,6 +38,8 @@ PLiCy は「日本語」の枠だけ、itch.io は「English」と「日本語�
 【AI の利用について】
 このゲームは、ららすけ（企画・ゲームデザイン）と AI（Anthropic の Claude）がいっしょに作りました。
 ルールやアイデアはららすけが考え、プログラム・絵（コードで描いた図形）・効果音（コードで作った音）・ゲーム内の文章（日本語・英語）は AI が作っています。
+
+X: @lalakurosoft
 ```
 
 ### English
@@ -59,6 +61,8 @@ Playable in English and Japanese (switch on the title screen).
 [About AI use]
 Made together by lalasuke (concept & game design) and an AI, Anthropic's Claude.
 lalasuke came up with the rules and ideas; the AI wrote the code, the art (shapes drawn in code), the sound effects (generated in code) and the in-game text (Japanese and English).
+
+X: @lalakurosoft
 ```
 
 ### キャッチコピー・短い説明
