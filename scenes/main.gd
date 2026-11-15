@@ -194,11 +194,15 @@ func _ready() -> void:
 	for id in unlocked:
 		stock[id] = START_STOCK
 	kitchen.order = unlocked
-	_build_ui()
+	# ことば: 保存してあればそれ、なければブラウザ/OSの言語（日本語なら日本語、それ以外は英語）
 	var cfg := ConfigFile.new()
-	if cfg.load(best_path) == OK:
+	var has_cfg := cfg.load(best_path) == OK
+	Tr.lang = "ja" if OS.get_locale_language() == "ja" else "en"
+	if has_cfg:
 		sfx_set = cfg.get_value("settings", "sfx", sfx_set)
-	sfx_button.text = SFX_NAMES[sfx_set]
+		Tr.lang = cfg.get_value("settings", "lang", Tr.lang)
+	_build_ui()
+	sfx_button.text = T(SFX_NAMES[sfx_set])
 	_refresh()
 	if skip_title:
 		_start()
@@ -210,26 +214,42 @@ func _ready() -> void:
 
 func _show_title() -> void:
 	var best := _load_best()
-	var text := "くま紳士のキッチン\n\nお料理上手をめざして\n今日もお料理修行\n\n目標は\nレシピ帳をいっぱいにすること！"
+	var text := T("くま紳士のキッチン\n\nお料理上手をめざして\n今日もお料理修行\n\n目標は\nレシピ帳をいっぱいにすること！")
 	if best > 0:
-		text += "\n\nベスト: %d日でコンプリート" % best
+		text += T("\n\nベスト: %d日でコンプリート") % best
 	var perfect := _load_best("perfect")
 	if perfect > 0:
-		text += "\nひみつも全部: %d日" % perfect
-	_show_popup(text, [["はじめる", _start], ["あそびかた", _show_howto], ["クレジット", _show_credits]])
+		text += T("\nひみつも全部: %d日") % perfect
+	_show_popup(text, [[T("はじめる"), _start], [T("あそびかた"), _show_howto], [T("クレジット"), _show_credits],
+		["English" if Tr.lang == "ja" else "日本語", _toggle_lang]])
+
+
+# ことばを切り替えて、画面を作り直す（タイトルから）
+func _toggle_lang() -> void:
+	Tr.lang = "en" if Tr.lang == "ja" else "ja"
+	var cfg := ConfigFile.new()
+	cfg.load(best_path)
+	cfg.set_value("settings", "lang", Tr.lang)
+	cfg.save(best_path)
+	sfx("click")
+	_to_title()
+
+
+func T(s: String) -> String:
+	return Tr.t(s)
 
 
 func _show_howto() -> void:
-	_show_popup(HOWTO, [["もどる", _show_title]], 24)
+	_show_popup(T(HOWTO), [[T("もどる"), _show_title]], 24)
 
 
 func _show_credits() -> void:
-	_show_popup(CREDITS, [["もどる", _show_title]], 22)
+	_show_popup(T(CREDITS), [[T("もどる"), _show_title]], 22)
 
 
 func _start() -> void:
 	popup.visible = false
-	say("棚の材料をタップして、鍋に2つ入れてみよう")
+	say(T("棚の材料をタップして、鍋に2つ入れてみよう"))
 	await _fade_to(0.0)
 	busy = false
 
@@ -255,7 +275,7 @@ func sfx(name: String) -> void:
 
 func _on_sfx_pressed() -> void:
 	sfx_set = SFX_SETS[(SFX_SETS.find(sfx_set) + 1) % SFX_SETS.size()]
-	sfx_button.text = SFX_NAMES[sfx_set]
+	sfx_button.text = T(SFX_NAMES[sfx_set])
 	var cfg := ConfigFile.new()
 	cfg.load(best_path)
 	cfg.set_value("settings", "sfx", sfx_set)
@@ -283,24 +303,24 @@ func _on_tap(pos: Vector2) -> void:
 func add_to_pot(id: String) -> void:
 	if pot.size() >= capacity:
 		sfx("error")
-		say("鍋はいっぱい。鍋をタップすると材料をもどせるよ")
+		say(T("鍋はいっぱい。鍋をタップすると材料をもどせるよ"))
 		return
 	if stock[id] <= 0:
 		sfx("error")
-		say("%sがもうないよ。「次の日」にすると増えるよ" % NAMES[id])
+		say(T("%sがもうないよ。「次の日」にすると増えるよ") % T(NAMES[id]))
 		return
 	stock[id] -= 1
 	pot.append(id)
 	sfx("sow")
 	var names := []
 	for x in pot:
-		names.append(NAMES[x])
+		names.append(T(NAMES[x]))
 	if pot.size() == capacity:
-		say("%s。「煮る」で料理しよう！" % "と".join(names))
+		say(T("%s。「煮る」で料理しよう！") % T("と").join(names))
 	elif pot.size() >= 2:
-		say("%s。「煮る」で料理できるよ。もう1つ入れてもいいよ" % "と".join(names))
+		say(T("%s。「煮る」で料理できるよ。もう1つ入れてもいいよ") % T("と").join(names))
 	else:
-		say("%sを鍋に入れたよ。あと1つえらんでね" % NAMES[id])
+		say(T("%sを鍋に入れたよ。あと1つえらんでね") % T(NAMES[id]))
 	_refresh()
 
 
@@ -310,7 +330,7 @@ func take_back() -> void:
 	var id: String = pot.pop_back()
 	stock[id] += 1
 	sfx("click")
-	say("%sを棚にもどしたよ" % NAMES[id])
+	say(T("%sを棚にもどしたよ") % T(NAMES[id]))
 	_refresh()
 
 
@@ -340,6 +360,8 @@ func recipe_for(items: Array) -> Dictionary:
 
 # くまのセリフ。1行に入りきらない時は「、」「……」などのあとで改行して、閉じかっこだけが次の行に残らないように
 func kuma(say: String, width := 19) -> String:
+	if Tr.lang == "en":  # 英語はスペースで自動で折り返すので、そのまま
+		return "Sir Bear: \"%s\"" % say
 	var line := "くま「%s」" % say
 	if line.length() <= width:
 		return line
@@ -407,7 +429,7 @@ func cook() -> void:
 	kitchen.cooking = true
 	kitchen.happy = false
 	sfx("water")
-	say("ぐつぐつ……")
+	say(T("ぐつぐつ……"))
 	_refresh()
 	await get_tree().create_timer(COOK_TIME).timeout
 	var r := recipe_for(pot)
@@ -429,22 +451,22 @@ func cook() -> void:
 	if r.id == "mystery":
 		fails += 1
 	sfx("good" if r.id != "mystery" else "error")
-	var text: String = "%sができた！" % r.name
+	var text: String = T("%sができた！") % T(r.name)
 	if is_new and star_id != "":
-		text += "\n\n隠し味を見つけた！\nレシピ帳に★をつけたよ"
+		text += T("\n\n隠し味を見つけた！\nレシピ帳に★をつけたよ")
 	elif is_new and secret:
-		text += "\n\n★ ひみつのレシピを見つけた！\n（%d / %d）" % [secret_found(), SECRETS.size()]
+		text += T("\n\n★ ひみつのレシピを見つけた！\n（%d / %d）") % [secret_found(), SECRETS.size()]
 	elif is_new:
-		text += "\n\nNEW! レシピ帳に登録したよ（%d / %d）" % [main_found(), RECIPES.size()]
-	text += "\n\n" + kuma(r.say)
+		text += T("\n\nNEW! レシピ帳に登録したよ（%d / %d）") % [main_found(), RECIPES.size()]
+	text += "\n\n" + kuma(T(r.say))
 	if main_found() >= EGG_RECIPES and not unlocked.has("egg"):
 		egg_ready = true
 	if main_found() >= FB_RECIPES and not unlocked.has("flour") and not fb_ready:
 		fb_ready = true
-		text += "\n\n" + kuma("そろそろ、小麦粉とバターも使ってみたいですな") + "\n明日、買いものにいこう"
+		text += "\n\n" + kuma(T("そろそろ、小麦粉とバターも使ってみたいですな")) + T("\n明日、買いものにいこう")
 	if capacity < 3 and not pot_ready and unlocked.has("flour") and two_all_found():
 		pot_ready = true
-		text += "\n\n上級編！\n" + kuma("2つで作る料理は、すべて覚えましたな") + "\n明日、新しい鍋を買いにいこう"
+		text += T("\n\n上級編！\n") + kuma(T("2つで作る料理は、すべて覚えましたな")) + T("\n明日、新しい鍋を買いにいこう")
 	var next: Callable = _close_popup
 	if not completed and main_found() == RECIPES.size():
 		completed = true
@@ -452,9 +474,9 @@ func cook() -> void:
 	elif continuing and is_new and secret and secret_found() == SECRETS.size():
 		continuing = false
 		end_buttons = []
-		end_text ="ひみつのレシピも、ぜんぶ見つけた！\n\n今度は、ひみつのレシピも全部見つけて\nクリアしてみよう！\n\n" + kuma("紳士の秘伝の書、ここに完成ですな")
+		end_text =T("ひみつのレシピも、ぜんぶ見つけた！\n\n今度は、ひみつのレシピも全部見つけて\nクリアしてみよう！\n\n") + kuma(T("紳士の秘伝の書、ここに完成ですな"))
 		next = _complete
-	_show_popup(text, [["つづける", next]], 26)
+	_show_popup(text, [[T("つづける"), next]], 26)
 
 
 func _close_popup() -> void:
@@ -462,9 +484,9 @@ func _close_popup() -> void:
 	kitchen.happy = false
 	busy = false
 	if _stuck():
-		say("材料がたりないね。「次の日」にしよう")
+		say(T("材料がたりないね。「次の日」にしよう"))
 	else:
-		say("次はどれとどれにしようかな")
+		say(T("次はどれとどれにしようかな"))
 
 
 # 材料が足りなくて、もう何も作れない
@@ -495,17 +517,17 @@ func next_day() -> void:
 	var want_fb := not unlocked.has("flour") and (fb_ready or day >= FB_DAY or want_pot)
 	if not unlocked.has("egg") and (egg_ready or day >= EGG_DAY or want_fb):
 		_unlock(["egg"])
-		lines.append("にわとりさんが、たまごを産んでくれた！")
-		news.append("たまごが使えるようになったよ")
+		lines.append(T("にわとりさんが、たまごを産んでくれた！"))
+		news.append(T("たまごが使えるようになったよ"))
 	if want_fb:
 		_unlock(["flour", "butter"])
-		lines.append(("それに、" if not lines.is_empty() else "") + "お料理用に\n小麦粉とバターを買ってきた！")
-		news.append("小麦粉とバターが使えるようになったよ")
+		lines.append((T("それに、") if not lines.is_empty() else "") + T("お料理用に\n小麦粉とバターを買ってきた！"))
+		news.append(T("小麦粉とバターが使えるようになったよ"))
 	if want_pot:
 		capacity = 3
-		lines.append(("それに、" if not lines.is_empty() else "") + "本格的にお料理するために\n新しい鍋を買ってきた！")
-		news.append("鍋に3つまで入れられるようになったよ")
-		news.append("（レシピ帳に、くまのメモが書いてある……？）")
+		lines.append((T("それに、") if not lines.is_empty() else "") + T("本格的にお料理するために\n新しい鍋を買ってきた！"))
+		news.append(T("鍋に3つまで入れられるようになったよ"))
+		news.append(T("（レシピ帳に、くまのメモが書いてある……？）"))
 	var fairy := fails >= HINT_FAILS and not _hint_candidates().is_empty()
 	if fairy:
 		fails = 0
@@ -513,17 +535,17 @@ func next_day() -> void:
 		picks.shuffle()
 		for r in picks.slice(0, HINTS_PER):
 			hinted[r.id] = true
-		lines.append(("それから、" if not lines.is_empty() else "") + "夜のうちに\nレシピ帳が枕元に置いてあった……")
-		news.append("レシピ帳の中身を見てみよう")
+		lines.append((T("それから、") if not lines.is_empty() else "") + T("夜のうちに\nレシピ帳が枕元に置いてあった……"))
+		news.append(T("レシピ帳の中身を見てみよう"))
 	if not lines.is_empty():  # 最後に、なにが使えるようになったかをまとめる
 		lines.append("\n".join(news))
 	_refresh()
 	sfx("morning")
-	say("%d日目の朝。材料が届いたよ" % day)
+	say(T("%d日目の朝。材料が届いたよ") % day)
 	await _fade_to(0.0)
 	if not lines.is_empty():
 		sfx("good")
-		_show_popup("\n\n".join(lines), [["レシピ帳を見る" if fairy else "わーい", _next_event]], 26)
+		_show_popup("\n\n".join(lines), [[T("レシピ帳を見る") if fairy else T("わーい"), _next_event]], 26)
 		await popup_closed
 		if fairy:
 			busy = false
@@ -560,29 +582,29 @@ func _complete() -> void:
 	sfx("clear")
 	kitchen.happy = true
 	busy = true
-	say("レシピ帳がいっぱいになった！")
-	var basic: Array = [["レシピ帳を見る", _show_book_from_clear], ["もう一回", _restart], ["タイトルへ", _to_title]]
+	say(T("レシピ帳がいっぱいになった！"))
+	var basic: Array = [[T("レシピ帳を見る"), _show_book_from_clear], [T("もう一回"), _restart], [T("タイトルへ"), _to_title]]
 	if end_text == "":
 		var s := secret_found()
-		var text := "レシピ帳がぜんぶうまった！\n\n%d日目でコンプリート\n（料理した回数 %d回）" % [day, cooked]
+		var text := T("レシピ帳がぜんぶうまった！\n\n%d日目でコンプリート\n（料理した回数 %d回）") % [day, cooked]
 		var best := _load_best()
 		if best == 0 or day < best:
 			_save_best(day)
-			text += "\n\nベスト記録！"
+			text += T("\n\nベスト記録！")
 		else:
-			text += "\n\nベスト: %d日" % best
+			text += T("\n\nベスト: %d日") % best
 		end_buttons = basic
 		if s == SECRETS.size():
-			text = "ひみつのレシピも全部見つけて\nクリア！ おめでとう！！\n\n" + text
+			text = T("ひみつのレシピも全部見つけて\nクリア！ おめでとう！！\n\n") + text
 			var perfect := _load_best("perfect")
 			if perfect == 0 or day < perfect:
 				_save_best(day, "perfect")
 		elif s > 0:
-			text += "\n\nひみつのレシピは、あと%dつ！" % (SECRETS.size() - s)
-			end_buttons = [["つづけて探す", _continue]] + basic
+			text += T("\n\nひみつのレシピは、あと%dつ！") % (SECRETS.size() - s)
+			end_buttons = [[T("つづけて探す"), _continue]] + basic
 		else:
-			text += "\n\nじつは、ひみつのレシピがあるよ！\n次のプレイで探してみてね"
-		text += "\n\n" + kuma("紳士の食卓が、完成いたしました")
+			text += T("\n\nじつは、ひみつのレシピがあるよ！\n次のプレイで探してみてね")
+		text += "\n\n" + kuma(T("紳士の食卓が、完成いたしました"))
 		end_text = text
 	if end_buttons.is_empty():  # つづけて探して、ひみつのレシピを見つけきった時
 		end_buttons = basic
@@ -594,7 +616,7 @@ func _continue() -> void:
 	popup.visible = false
 	kitchen.happy = false
 	busy = false
-	say("ひみつのレシピを探そう！ あと%dつ" % (SECRETS.size() - secret_found()))
+	say(T("ひみつのレシピを探そう！ あと%dつ") % (SECRETS.size() - secret_found()))
 
 
 func _show_book_from_clear() -> void:
@@ -640,9 +662,9 @@ func _show_book() -> void:
 	book.memos = {}
 	book.star_names = {}
 	for id in STARS:
-		book.star_names[id] = NAMES[STARS[id]]
+		book.star_names[id] = T(NAMES[STARS[id]])
 		if capacity >= 3:
-			book.memos[id] = MEMO[STARS[id]]
+			book.memos[id] = T(MEMO[STARS[id]])
 	book.page = 0
 	_update_page()
 	book_panel.visible = true
@@ -666,10 +688,10 @@ func _turn_page(d: int) -> void:
 func _update_page() -> void:
 	page_label.text = "%d / %d" % [book.page + 1, book.pages()]
 	if book.on_secret_page():
-		book_title.text = "ひみつのレシピ %d / %d" % [book.secret_count(), SECRETS.size()]
+		book_title.text = T("ひみつのレシピ %d / %d") % [book.secret_count(), SECRETS.size()]
 		book_title.add_theme_color_override("font_color", Color(0.62, 0.42, 0.78))
 	else:
-		book_title.text = "レシピ帳"
+		book_title.text = T("レシピ帳")
 		book_title.remove_theme_color_override("font_color")
 	book.queue_redraw()
 
@@ -681,8 +703,8 @@ func say(text: String) -> void:
 
 
 func _refresh() -> void:
-	day_label.text = "%d日目" % day
-	book_button.text = "レシピ帳 %d / %d" % [main_found(), RECIPES.size()]
+	day_label.text = T("%d日目") % day
+	book_button.text = T("レシピ帳 %d / %d") % [main_found(), RECIPES.size()]
 	cook_button.disabled = pot.size() < 2 or kitchen.cooking
 	kitchen.capacity = capacity
 	kitchen.stock = stock
@@ -725,7 +747,7 @@ func _build_ui() -> void:
 	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	message_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cook_button = Button.new()
-	cook_button.text = "煮る"
+	cook_button.text = T("煮る")
 	cook_button.position = Vector2(24, 106)
 	cook_button.size = Vector2(672, 80)
 	cook_button.add_theme_font_size_override("font_size", 36)
@@ -737,7 +759,7 @@ func _build_ui() -> void:
 		cook_button.add_theme_stylebox_override(st, sb)
 	bottom.add_child(cook_button)
 	next_button = Button.new()
-	next_button.text = "次の日（材料が増える）"
+	next_button.text = T("次の日（材料が増える）")
 	next_button.position = Vector2(24, 198)
 	next_button.size = Vector2(672, 64)
 	next_button.add_theme_font_size_override("font_size", 28)
@@ -760,7 +782,7 @@ func _build_ui() -> void:
 	var bbox := VBoxContainer.new()
 	book_panel.add_child(bbox)
 	book_title = Label.new()
-	book_title.text = "レシピ帳"
+	book_title.text = T("レシピ帳")
 	book_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	book_title.add_theme_font_size_override("font_size", 32)
 	bbox.add_child(book_title)
@@ -771,7 +793,7 @@ func _build_ui() -> void:
 	var nav := HBoxContainer.new()
 	nav.add_theme_constant_override("separation", 16)
 	bbox.add_child(nav)
-	for spec in [["← まえ", -1], ["", 0], ["つぎ →", 1]]:
+	for spec in [[T("← まえ"), -1], ["", 0], [T("つぎ →"), 1]]:
 		if spec[1] == 0:
 			page_label = Label.new()
 			page_label.custom_minimum_size = Vector2(200, 0)
@@ -786,7 +808,7 @@ func _build_ui() -> void:
 		b.pressed.connect(_turn_page.bind(spec[1]))
 		nav.add_child(b)
 	var close := Button.new()
-	close.text = "とじる"
+	close.text = T("とじる")
 	close.custom_minimum_size = Vector2(0, 60)
 	close.add_theme_font_size_override("font_size", 26)
 	close.pressed.connect(_hide_book)

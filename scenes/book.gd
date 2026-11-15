@@ -66,21 +66,40 @@ func _draw() -> void:
 		else:
 			Art.dish(self, "unknown", Color.WHITE, c, 0.8)
 			draw_string(font, c + Vector2(-10, 12), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color(1, 1, 1))
-		var name: String = r.name if got else "？？？"
+		var name: String = Tr.t(r.name) if got else "？？？"
 		draw_string(font, c + Vector2(-cw / 2 + 10, 72), name, HORIZONTAL_ALIGNMENT_CENTER, cw - 20, 18, Art.LINE)
 		if got and starred.has(r.id):
 			Art.star(self, c + Vector2(cw / 2 - 30, -38), 15)
-			draw_string(font, c + Vector2(-cw / 2 + 10, 102), "隠し味: %s" % star_names.get(r.id, ""), HORIZONTAL_ALIGNMENT_CENTER, cw - 20, 15, Color(0.75, 0.5, 0.1))
+			draw_string(font, c + Vector2(-cw / 2 + 10, 102), Tr.t("隠し味: %s") % star_names.get(r.id, ""), HORIZONTAL_ALIGNMENT_CENTER, cw - 20, 15, Color(0.75, 0.5, 0.1))
 		elif got and memos.has(r.id):
 			draw_string(font, c + Vector2(-cw / 2 + 10, 102), memos[r.id], HORIZONTAL_ALIGNMENT_CENTER, cw - 20, 14, MEMO)
 		elif not got and (hinted.has(r.id) or on_secret_page()):
-			var hl: PackedStringArray = r.hint.split("、", false, 1)  # 長いヒントは「、」で2行に
+			var hl := _two_lines(Tr.t(r.hint))  # 長いヒントは2行に
 			if hl.size() == 2:
-				draw_string(font, c + Vector2(-cw / 2 + 10, 94), hl[0] + "、", HORIZONTAL_ALIGNMENT_CENTER, cw - 20, 14, FAIRY)
+				draw_string(font, c + Vector2(-cw / 2 + 10, 94), hl[0], HORIZONTAL_ALIGNMENT_CENTER, cw - 20, 14, FAIRY)
 				draw_string(font, c + Vector2(-cw / 2 + 10, 112), hl[1], HORIZONTAL_ALIGNMENT_CENTER, cw - 20, 14, FAIRY)
 			else:
-				draw_string(font, c + Vector2(-cw / 2 + 10, 102), r.hint, HORIZONTAL_ALIGNMENT_CENTER, cw - 20, 14, FAIRY)
+				draw_string(font, c + Vector2(-cw / 2 + 10, 102), hl[0], HORIZONTAL_ALIGNMENT_CENTER, cw - 20, 14, FAIRY)
 	if on_secret_page():
-		draw_string(font, Vector2(0, ROWS * ch + 26), "（このページだけ、紙の色がちがう……）", HORIZONTAL_ALIGNMENT_CENTER, size.x, 16, FAIRY)
+		draw_string(font, Vector2(0, ROWS * ch + 26), Tr.t("（このページだけ、紙の色がちがう……）"), HORIZONTAL_ALIGNMENT_CENTER, size.x, 16, FAIRY)
 	elif not hinted.is_empty():
-		draw_string(font, Vector2(0, ROWS * ch + 26), "（ところどころ、自分のじゃない字で書いてある……妖精さん？）", HORIZONTAL_ALIGNMENT_CENTER, size.x, 16, FAIRY)
+		draw_string(font, Vector2(0, ROWS * ch + 26), Tr.t("（ところどころ、自分のじゃない字で書いてある……妖精さん？）"), HORIZONTAL_ALIGNMENT_CENTER, size.x, 16, FAIRY)
+
+
+# ヒントを1行か2行に。日本語は「、」のあと、英語は長い時だけまん中に近いスペース（「, 」があればそこ）で切る
+func _two_lines(s: String) -> PackedStringArray:
+	var k := s.find("、")
+	if k != -1:
+		return PackedStringArray([s.substr(0, k + 1), s.substr(k + 1)])
+	if s.length() <= 24 or s.find(" ") == -1:
+		return PackedStringArray([s])
+	k = s.find(", ")
+	if k != -1:
+		return PackedStringArray([s.substr(0, k + 1), s.substr(k + 2)])
+	var best := -1
+	var i := s.find(" ")
+	while i != -1:
+		if best == -1 or absi(i - s.length() / 2) < absi(best - s.length() / 2):
+			best = i
+		i = s.find(" ", i + 1)
+	return PackedStringArray([s.substr(0, best), s.substr(best + 1)])

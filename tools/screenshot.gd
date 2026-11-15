@@ -37,6 +37,10 @@ func next_day(keep_last := false) -> void:
 func _run() -> void:
 	var args := OS.get_cmdline_user_args()
 	var mode: String = args[1] if args.size() > 1 else "title"
+	var cfg := ConfigFile.new()  # 3つめの引数でことば（ja / en）
+	cfg.load("user://test_best.cfg")
+	cfg.set_value("settings", "lang", args[2] if args.size() > 2 else "ja")
+	cfg.save("user://test_best.cfg")
 	main = load("res://scenes/main.tscn").instantiate()
 	main.best_path = "user://test_best.cfg"
 	root.add_child(main)
