@@ -40,6 +40,8 @@ func _run() -> void:
 	var cfg := ConfigFile.new()  # 3つめの引数でことば（ja / en）
 	cfg.load("user://test_best.cfg")
 	cfg.set_value("settings", "lang", args[2] if args.size() > 2 else "ja")
+	if cfg.has_section("best"):  # 前のテストのベスト記録は消しておく（投稿用のスクショに出ないように）
+		cfg.erase_section("best")
 	cfg.save("user://test_best.cfg")
 	main = load("res://scenes/main.tscn").instantiate()
 	main.best_path = "user://test_best.cfg"
@@ -71,7 +73,7 @@ func _run() -> void:
 			await make(["turnip", "strawberry"])
 			await make(["tomato", "strawberry"])
 			await next_day()
-		"adv", "star", "starbook", "secret", "secretbook", "secretall", "clear1":
+		"adv", "star", "starbook", "secret", "secretbook", "secretall", "clear1", "showcase":
 			# 2つの料理を全部作る → 次の朝、新しい鍋
 			for r in main.RECIPES:
 				if r.pair.size() != 2:
@@ -98,6 +100,11 @@ func _run() -> void:
 				await make(["egg", "egg", "egg"])
 				main._show_book()
 				main._turn_page(99)
+			elif mode == "showcase":  # 投稿ページ用: ひみつのタルトを作って、鍋に3つ入れたところ
+				await make(["strawberry", "strawberry", "flour"])
+				main.add_to_pot("flour")
+				main.add_to_pot("egg")
+				main.add_to_pot("milk")
 			elif mode == "secretall":
 				for r in main.SECRETS:
 					await make(r.pair)
