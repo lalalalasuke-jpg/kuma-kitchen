@@ -203,10 +203,15 @@ static func dish(ci: CanvasItem, kind: String, color: Color, p: Vector2, s := 1.
 		"noodles":  # パスタ・ナポリタン: 半円の麺を重ねて、くるくる
 			_plate(ci, p + Vector2(0, 12) * s, 52, s)
 			var dark := color.darkened(0.25)
-			for k in 9:
-				var q := p + Vector2(-26 + (k % 5) * 13, -4 - (k / 5) * 10 + (k % 2) * 4) * s
-				ci.draw_arc(q, 11 * s, PI * (0.1 + (k % 3) * 0.3), PI * (1.3 + (k % 3) * 0.3), 10, dark, 6 * s)
-				ci.draw_arc(q, 11 * s, PI * (0.1 + (k % 3) * 0.3), PI * (1.3 + (k % 3) * 0.3), 10, color, 3.5 * s)
+			var k := 0
+			for row in 4:  # 下の段ほど広く、上にいくほど細く → こんもり山盛り
+				var n: int = [7, 6, 4, 2][row]
+				for j in n:
+					var q := p + Vector2((j - (n - 1) / 2.0) * 10 + (row % 2) * 3, 4 - row * 9 + (j % 2) * 3) * s
+					var a0 := PI * (0.1 + (k % 4) * 0.45)
+					ci.draw_arc(q, 10 * s, a0, a0 + PI * 1.2, 10, dark, 6 * s)
+					ci.draw_arc(q, 10 * s, a0, a0 + PI * 1.2, 10, color, 3.5 * s)
+					k += 1
 		"toji":  # カブのたまごとじ: 黄色いたまごから、カブが顔を出す
 			_plate(ci, p + Vector2(0, 14) * s, 52, s)
 			ci.draw_set_transform(p + Vector2(0, 2) * s, 0, Vector2(1, 0.5))
