@@ -200,6 +200,57 @@ static func dish(ci: CanvasItem, kind: String, color: Color, p: Vector2, s := 1.
 			for q in [Vector2(-18, 0), Vector2(16, -2), Vector2(0, -16)]:
 				_outlined_circle(ci, p + q * s, 18 * s, color, 2)
 			ci.draw_string(ThemeDB.fallback_font, p + Vector2(-8, -2) * s, "?", HORIZONTAL_ALIGNMENT_LEFT, -1, int(30 * s), Color(1, 1, 1))
+		"noodles":  # パスタ・ナポリタン: 半円の麺を重ねて、くるくる
+			_plate(ci, p + Vector2(0, 12) * s, 52, s)
+			var dark := color.darkened(0.25)
+			for k in 9:
+				var q := p + Vector2(-26 + (k % 5) * 13, -4 - (k / 5) * 10 + (k % 2) * 4) * s
+				ci.draw_arc(q, 11 * s, PI * (0.1 + (k % 3) * 0.3), PI * (1.3 + (k % 3) * 0.3), 10, dark, 6 * s)
+				ci.draw_arc(q, 11 * s, PI * (0.1 + (k % 3) * 0.3), PI * (1.3 + (k % 3) * 0.3), 10, color, 3.5 * s)
+		"toji":  # カブのたまごとじ: 黄色いたまごから、カブが顔を出す
+			_plate(ci, p + Vector2(0, 14) * s, 52, s)
+			ci.draw_set_transform(p + Vector2(0, 2) * s, 0, Vector2(1, 0.5))
+			ci.draw_circle(Vector2.ZERO, 42 * s + 3, LINE)
+			ci.draw_circle(Vector2.ZERO, 42 * s, color)
+			ci.draw_set_transform(Vector2.ZERO)
+			ci.draw_line(p + Vector2(8, -18) * s, p + Vector2(14, -34) * s, Color(0.35, 0.65, 0.3), 5 * s)
+			ci.draw_line(p + Vector2(8, -18) * s, p + Vector2(2, -32) * s, Color(0.35, 0.65, 0.3), 5 * s)
+			_outlined_circle(ci, p + Vector2(8, -8) * s, 13 * s, Color(0.98, 0.96, 0.94), 2)
+			ci.draw_arc(p + Vector2(8, -8) * s, 13 * s, PI * 0.15, PI * 0.85, 8, Color(0.85, 0.55, 0.85), 3 * s)
+			for q in [Vector2(-22, 0), Vector2(-8, 8), Vector2(24, 4)]:  # たまごのふわふわ
+				ci.draw_arc(p + q * s, 7 * s, PI, TAU, 6, color.darkened(0.2), 2)
+		"scramble":  # スクランブルエッグ: ふぞろいな、くずれたかたまり
+			_plate(ci, p + Vector2(0, 14) * s, 52, s)
+			for q in [Vector2(-22, 2), Vector2(4, -8), Vector2(22, 4), Vector2(-4, 8), Vector2(-14, -12)]:
+				var bl := PackedVector2Array()
+				for k in 8:
+					var a := TAU * k / 8.0
+					var rr := (10.0 + float((int(q.x) * 7 + k * 13) % 7)) * s
+					bl.append(p + q * s + Vector2(cos(a), sin(a) * 0.75) * rr)
+				ci.draw_colored_polygon(bl, color)
+				bl.append(bl[0])
+				ci.draw_polyline(bl, color.darkened(0.3), 2)
+			ci.draw_circle(p + Vector2(12, -4) * s, 2 * s, Color(0.35, 0.65, 0.3))
+			ci.draw_circle(p + Vector2(-10, 4) * s, 2 * s, Color(0.35, 0.65, 0.3))
+		"butterni":  # カブのバター煮: くし切りのカブに四角いバター
+			_plate(ci, p + Vector2(0, 14) * s, 52, s)
+			for k in 3:
+				var q := p + Vector2(-22 + k * 22, 4 - (k % 2) * 8) * s
+				var w := PackedVector2Array([q + Vector2(-12, 6) * s, q + Vector2(12, 6) * s, q + Vector2(0, -14) * s])
+				ci.draw_colored_polygon(w, color)
+				w.append(w[0])
+				ci.draw_polyline(w, LINE, 2)
+			_box(ci, Rect2(p + Vector2(-8, -24) * s, Vector2(16, 12) * s), Color(1, 0.88, 0.4), int(3 * s), 2)
+		"halves":  # 焼きトマト: 輪切りのトマトに焦げ目
+			_plate(ci, p + Vector2(0, 14) * s, 52, s)
+			for q in [Vector2(-18, 2), Vector2(18, 0)]:
+				var c: Vector2 = p + q * s
+				_outlined_circle(ci, c, 17 * s, color, 2)
+				ci.draw_circle(c, 12 * s, color.lightened(0.3))
+				for k in 3:
+					var a := TAU * k / 3.0 + 0.5
+					ci.draw_circle(c + Vector2(cos(a), sin(a)) * 6 * s, 2.5 * s, Color(1, 0.9, 0.5))
+				ci.draw_line(c + Vector2(-8, -6) * s, c + Vector2(4, 8) * s, Color(0.45, 0.2, 0.1, 0.6), 3 * s)  # 焦げ目
 		"crepe":  # クレープ: くるっと巻いた三角（color は中身。赤っぽいとイチゴがのる）
 			_plate(ci, p + Vector2(0, 22) * s, 46, s)
 			var cp := PackedVector2Array([p + Vector2(-26, -30) * s, p + Vector2(26, -30) * s, p + Vector2(0, 24) * s])

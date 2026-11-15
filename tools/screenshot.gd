@@ -106,7 +106,7 @@ func _run() -> void:
 						await make(r.pair)
 				await make(["turnip", "strawberry"])
 				main._complete()
-		"complete", "book2":
+		"complete", "book2", "book3":
 			for r in main.RECIPES:
 				if r.pair.is_empty():
 					continue
@@ -119,9 +119,9 @@ func _run() -> void:
 			await make(["turnip", "strawberry"])
 			main._complete()
 			await create_timer(0.3).timeout
-			if mode == "book2":
+			if mode != "complete":
 				main._show_book_from_clear()
-				main._turn_page(1)
+				main._turn_page(1 if mode == "book2" else 2)
 	print("mode=", mode, " day=", main.day, " found=", main.found.size(), " cap=", main.capacity, " unlocked=", main.unlocked, " hinted=", main.hinted.keys(), " starred=", main.starred.keys(), " secrets=", main.secret_found())
 	await create_timer(0.4).timeout
 	await RenderingServer.frame_post_draw

@@ -46,19 +46,19 @@ const RECIPES := [
 		"hint": "赤い野菜とたまご", "say": "ふわふわのたまごが、たまりませんな"},
 	{"id": "pudding", "name": "プリン", "pair": ["egg", "milk"], "kind": "pudding", "color": Color(1, 0.88, 0.5),
 		"hint": "たまごと白い飲みもの", "say": "ぷるぷる……紳士も笑顔になります"},
-	{"id": "tamagotoji", "name": "カブのたまごとじ", "pair": ["turnip", "egg"], "kind": "plate", "color": Color(1, 0.86, 0.45),
+	{"id": "tamagotoji", "name": "カブのたまごとじ", "pair": ["turnip", "egg"], "kind": "toji", "color": Color(1, 0.86, 0.45),
 		"hint": "白い野菜とたまご", "say": "やさしい黄色ですな"},
-	{"id": "pasta", "name": "パスタ", "pair": ["flour", "egg"], "kind": "plate", "color": Color(0.98, 0.85, 0.5),
+	{"id": "pasta", "name": "パスタ", "pair": ["flour", "egg"], "kind": "noodles", "color": Color(0.98, 0.85, 0.5),
 		"hint": "粉とたまご", "say": "生地から作るとは、本格的ですな"},
-	{"id": "butterni", "name": "カブのバター煮", "pair": ["turnip", "butter"], "kind": "plate", "color": Color(0.98, 0.92, 0.6),
+	{"id": "butterni", "name": "カブのバター煮", "pair": ["turnip", "butter"], "kind": "butterni", "color": Color(0.99, 0.97, 0.9),
 		"hint": "白い野菜とバター", "say": "バターの香りが、紳士的でございます"},
-	{"id": "scrambled", "name": "スクランブルエッグ", "pair": ["egg", "butter"], "kind": "plate", "color": Color(1, 0.88, 0.35),
+	{"id": "scrambled", "name": "スクランブルエッグ", "pair": ["egg", "butter"], "kind": "scramble", "color": Color(1, 0.88, 0.35),
 		"hint": "たまごとバター", "say": "とろとろ……朝の幸せでございます"},
 	{"id": "crepe", "name": "クレープ", "pair": ["flour", "milk"], "kind": "crepe", "color": Color(1, 0.98, 0.92),
 		"hint": "粉と白い飲みもの", "say": "うすく、うすく……紳士の腕の見せどころ"},
 	{"id": "shortbread", "name": "ショートブレッド", "pair": ["flour", "butter"], "kind": "bars", "color": Color(0.96, 0.82, 0.55),
 		"hint": "粉とバター", "say": "紅茶のお供に、これ以上はございません"},
-	{"id": "yakitomato", "name": "焼きトマト", "pair": ["tomato", "butter"], "kind": "plate", "color": Color(0.9, 0.28, 0.18),
+	{"id": "yakitomato", "name": "焼きトマト", "pair": ["tomato", "butter"], "kind": "halves", "color": Color(0.9, 0.28, 0.18),
 		"hint": "赤い野菜とバター", "say": "焼くと、甘みがぐっと増しますな"},
 	{"id": "pancake", "name": "パンケーキ", "pair": ["flour", "egg", "milk"], "kind": "pancake", "color": Color(0.9, 0.68, 0.38),
 		"hint": "粉とたまごと白い飲みもの", "say": "ふわっふわ……！"},
@@ -76,7 +76,7 @@ const RECIPES := [
 		"hint": "白い野菜と白い飲みものと粉", "say": "こんがり、香ばしい……"},
 	{"id": "omelet", "name": "オムレツ", "pair": ["egg", "egg", "milk"], "kind": "omelet", "color": Color(1, 0.86, 0.3),
 		"hint": "たまごふたつと白い飲みもの", "say": "ふわふわの黄色……ため息が出ますな"},
-	{"id": "napolitan", "name": "ナポリタン", "pair": ["flour", "egg", "tomato"], "kind": "plate", "color": Color(0.95, 0.42, 0.22),
+	{"id": "napolitan", "name": "ナポリタン", "pair": ["flour", "egg", "tomato"], "kind": "noodles", "color": Color(0.95, 0.42, 0.22),
 		"hint": "粉とたまごと赤い野菜", "say": "どこか懐かしいお味でございます"},
 	{"id": "ichigocrepe", "name": "イチゴクレープ", "pair": ["flour", "milk", "strawberry"], "kind": "crepe", "color": Color(1, 0.7, 0.75),
 		"hint": "粉と白い飲みものとあまい実", "say": "くるっと巻いて……完璧ですな"},
@@ -338,6 +338,24 @@ func recipe_for(items: Array) -> Dictionary:
 	return RECIPES[RECIPES.size() - 1]  # ふしぎな料理
 
 
+# くまのセリフ。1行に入りきらない時は「、」「……」などのあとで改行して、閉じかっこだけが次の行に残らないように
+func kuma(say: String, width := 19) -> String:
+	var line := "くま「%s」" % say
+	if line.length() <= width:
+		return line
+	var best := -1
+	for mark in ["、", "……", "！", "？", "。"]:
+		var i := say.find(mark)
+		while i != -1:
+			var cut: int = i + mark.length()
+			if cut < say.length() and (best == -1 or absi(cut - say.length() / 2) < absi(best - say.length() / 2)):
+				best = cut
+			i = say.find(mark, i + 1)
+	if best == -1:
+		return "くま\n「%s」" % say
+	return "くま「%s\n%s」" % [say.substr(0, best), say.substr(best).strip_edges()]
+
+
 func is_secret(id: String) -> bool:
 	return SECRETS.any(func(r: Dictionary) -> bool: return r.id == id)
 
@@ -413,20 +431,20 @@ func cook() -> void:
 	sfx("good" if r.id != "mystery" else "error")
 	var text: String = "%sができた！" % r.name
 	if is_new and star_id != "":
-		text += "\n\n隠し味を見つけた！ レシピ帳に★をつけたよ"
+		text += "\n\n隠し味を見つけた！\nレシピ帳に★をつけたよ"
 	elif is_new and secret:
-		text += "\n\n★ ひみつのレシピを見つけた！（%d / %d）" % [secret_found(), SECRETS.size()]
+		text += "\n\n★ ひみつのレシピを見つけた！\n（%d / %d）" % [secret_found(), SECRETS.size()]
 	elif is_new:
 		text += "\n\nNEW! レシピ帳に登録したよ（%d / %d）" % [main_found(), RECIPES.size()]
-	text += "\n\nくま「%s」" % r.say
+	text += "\n\n" + kuma(r.say)
 	if main_found() >= EGG_RECIPES and not unlocked.has("egg"):
 		egg_ready = true
 	if main_found() >= FB_RECIPES and not unlocked.has("flour") and not fb_ready:
 		fb_ready = true
-		text += "\n\nくま「そろそろ、小麦粉とバターも使ってみたいですな」\n明日、買いものにいこう"
+		text += "\n\n" + kuma("そろそろ、小麦粉とバターも使ってみたいですな") + "\n明日、買いものにいこう"
 	if capacity < 3 and not pot_ready and unlocked.has("flour") and two_all_found():
 		pot_ready = true
-		text += "\n\n上級編！\nくま「2つで作る料理は、すべて覚えましたな」\n明日、新しい鍋を買いにいこう"
+		text += "\n\n上級編！\n" + kuma("2つで作る料理は、すべて覚えましたな") + "\n明日、新しい鍋を買いにいこう"
 	var next: Callable = _close_popup
 	if not completed and main_found() == RECIPES.size():
 		completed = true
@@ -434,7 +452,7 @@ func cook() -> void:
 	elif continuing and is_new and secret and secret_found() == SECRETS.size():
 		continuing = false
 		end_buttons = []
-		end_text ="ひみつのレシピも、ぜんぶ見つけた！\n\n今度は、ひみつのレシピも全部見つけて\nクリアしてみよう！\n\nくま「紳士の秘伝の書、ここに完成ですな」"
+		end_text ="ひみつのレシピも、ぜんぶ見つけた！\n\n今度は、ひみつのレシピも全部見つけて\nクリアしてみよう！\n\n" + kuma("紳士の秘伝の書、ここに完成ですな")
 		next = _complete
 	_show_popup(text, [["つづける", next]], 26)
 
@@ -564,7 +582,7 @@ func _complete() -> void:
 			end_buttons = [["つづけて探す", _continue]] + basic
 		else:
 			text += "\n\nじつは、ひみつのレシピがあるよ！\n次のプレイで探してみてね"
-		text += "\n\nくま「紳士の食卓が、完成いたしました」"
+		text += "\n\n" + kuma("紳士の食卓が、完成いたしました")
 		end_text = text
 	if end_buttons.is_empty():  # つづけて探して、ひみつのレシピを見つけきった時
 		end_buttons = basic
