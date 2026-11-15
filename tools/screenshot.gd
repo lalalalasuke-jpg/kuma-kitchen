@@ -67,14 +67,45 @@ func _run() -> void:
 			await make(["turnip", "strawberry"])
 			await make(["tomato", "strawberry"])
 			await next_day()
-		"adv":
-			for pr in [["turnip", "milk"], ["tomato", "tomato"], ["strawberry", "milk"], ["turnip", "tomato"],
-					["tomato", "milk"], ["strawberry", "strawberry"], ["milk", "milk"], ["turnip", "turnip"]]:
-				await make(pr)
+		"adv", "star", "starbook", "secret", "secretbook", "secretall", "clear1":
+			# 2つの料理を全部作る → 次の朝、新しい鍋
+			for r in main.RECIPES:
+				if r.pair.size() != 2:
+					continue
+				for x in r.pair:
+					if not main.unlocked.has(x):
+						await next_day()
+				await make(r.pair)
 			await next_day()
-			main.add_to_pot("flour")
-			main.add_to_pot("egg")
-			main.add_to_pot("milk")
+			if mode == "adv":
+				main.add_to_pot("flour")
+				main.add_to_pot("egg")
+				main.add_to_pot("milk")
+			elif mode == "star":  # ポタージュ★（隠し味ミルク）
+				await make(["turnip", "milk", "milk"], false)
+			elif mode == "starbook":
+				await make(["turnip", "milk", "milk"])
+				await make(["tomato", "tomato", "strawberry"])
+				main._show_book()
+			elif mode == "secret":
+				await make(["flour", "flour", "flour"], false)
+			elif mode == "secretbook":
+				await make(["flour", "flour", "flour"])
+				await make(["egg", "egg", "egg"])
+				main._show_book()
+				main._turn_page(99)
+			elif mode == "secretall":
+				for r in main.SECRETS:
+					await make(r.pair)
+				main._show_book()
+				main._turn_page(99)
+			elif mode == "clear1":  # ひみつ1つ見つけてからクリア → 「つづけて探す」
+				await make(["milk", "milk", "milk"])
+				for r in main.RECIPES:
+					if r.pair.size() == 3:
+						await make(r.pair)
+				await make(["turnip", "strawberry"])
+				main._complete()
 		"complete", "book2":
 			for r in main.RECIPES:
 				if r.pair.is_empty():
@@ -91,7 +122,7 @@ func _run() -> void:
 			if mode == "book2":
 				main._show_book_from_clear()
 				main._turn_page(1)
-	print("mode=", mode, " day=", main.day, " found=", main.found.size(), " cap=", main.capacity, " unlocked=", main.unlocked, " hinted=", main.hinted.keys())
+	print("mode=", mode, " day=", main.day, " found=", main.found.size(), " cap=", main.capacity, " unlocked=", main.unlocked, " hinted=", main.hinted.keys(), " starred=", main.starred.keys(), " secrets=", main.secret_found())
 	await create_timer(0.4).timeout
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(args[0])

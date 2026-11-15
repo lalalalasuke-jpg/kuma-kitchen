@@ -79,6 +79,8 @@ func _draw() -> void:
 	Art._box(self, Rect2(DISH + Vector2(-90, 50), Vector2(180, 22)), Color(0.72, 0.5, 0.3), 6)
 	if not last_dish.is_empty():
 		Art.dish(self, last_dish.kind, last_dish.color, DISH, 1.2)
+		if last_dish.get("shine", false):  # 隠し味★・ひみつのレシピはキラキラ
+			Art.sparkles(self, DISH, _t, 1.2)
 	# コンロ
 	Art._box(self, Rect2(POT + Vector2(-150, 70), Vector2(300, 220)), Color(0.85, 0.85, 0.88), 16, 4)
 	for k in 2:
